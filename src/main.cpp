@@ -171,15 +171,57 @@ void buildObjects() {
 	// };
 
 	GLfloat vertices[] = {
-		-0.5f, 0.0f, 0.5f,
-		0.5f,  0.0f, 0.5f,
-		0.0f,  1.0f, 0.5f
+
+	   -0.5f, 0.0f, 0.5f, 1.0f, // pos z side face triangle
+		0.5f, 0.0f, 0.5f, 1.0f,
+		0.0f, 1.0f, 0.0f, 1.0f,
+
+		0.5f,  0.0f,  0.5f, 1.0f, // pos x side face triangle
+		0.5f,  0.0f, -0.5f, 1.0f,
+		0.0f,  1.0f,  0.0f, 1.0f,
+
+		0.5f,  0.0f, -0.5f, 1.0f, // neg z side face triangle
+       -0.5f,  0.0f, -0.5f, 1.0f,
+		0.0f,  1.0f,  0.0f, 1.0f,
+
+       -0.5f,  0.0f, -0.5f, 1.0f, // neg x side face triangle
+	   -0.5f,  0.0f,  0.5f, 1.0f,
+		0.0f,  1.0f,  0.0f, 1.0f
+
+	   -0.5f, 0.0f, 0.5f,  1.0f, // bottom triangle 1
+	    0.5f, 0.0f, -0.5f, 1.0f,
+	   -0.5f, 0.0f, -0.5f, 1.0f,
+
+	   -0.5f, 0.0f, 0.5f,  1.0f, // bottom triangle 2
+		0.5f,  0.0f,  0.5f, 1.0f,
+	    0.5f, 0.0f, -0.5f, 1.0f,
+
 	};  
 
 	GLfloat colors[] = {
-		0.0f, 0.0f, 1.0f, 1.0f,
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 1 vcolors
 		0.0f, 1.0f, 0.0f, 1.0f,
-		1.0f, 0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 2 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 3 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 4 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 5 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 6 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
 	};
 
 	glGenVertexArrays(1, vertexBuffers);
@@ -194,7 +236,7 @@ void buildObjects() {
 /*
  * Test code for internal object.
  */
-	nbrTriangles = 1;
+	nbrTriangles = 6;
 	glGenBuffers(1, &(arrayBuffers[0]));
 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
 	glBufferData(GL_ARRAY_BUFFER,
