@@ -1,9 +1,20 @@
+/*
+* For EECS 4530 -- Programming Project 1
+*
+* main.cpp - The entry point to this program
+*
+* Created by: Gerald Heuring
+* Modified by: Sebastian Hamel
+*
+*/
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include <string.h>
+#include <stdlib.h>
 #include "LoadShaders.h"
 #include "linmath.h"
 //#include "vgl.h"
@@ -33,7 +44,8 @@ float rotationAngle;
 bool elements;
 int nbrTriangles, materialToUse = 0;
 int startTriangle = 0, endTriangle = 12;
-bool rotationOn = false;
+bool rotationOn = true;
+bool orthoViewEnabled = true;
 mat4x4 rotation, viewMatrix, projectionMatrix;
 
 map<string, GLuint> locationMap;
@@ -60,9 +72,9 @@ static void error_callback(int error, const char* description)
  */
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	float eye_x[] = { 1.0f, 0.0f, 0.0f };
+	float eye_x[] = { 5.0f, 0.0f, 0.0f };
 	float eye_y[] = { 0.0f, 5.0f, 0.0f };
-	float eye_z[] = { 0.0f, 0.0f, 1.0f };
+	float eye_z[] = { 0.0f, 0.0f, 5.0f };
 	float center[] = { 0.0f, 0.0f, 0.0f };
 	float up[] = { 0.0f, 1.0f, 0.0f };
 
@@ -83,6 +95,24 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	}
 	else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
 		mat4x4_look_at(viewMatrix, eye_z, center, up);
+	}
+	else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+		orthoViewEnabled = !orthoViewEnabled;
+
+		// Toggle view between orthographic and perspective
+		if(orthoViewEnabled) {
+			mat4x4_ortho(projectionMatrix, -1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
+		} else {
+			mat4x4_perspective(projectionMatrix, 45.0f/180.0f * 3.14159f, 1.0f, 0.01f, 1000.0f);
+		}
+	}
+	else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+		// Toggle rotation off
+		rotationOn = false;
+	}
+	else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+		// Toggle rotation off
+		rotationOn = true;
 	}
 }
 
@@ -156,96 +186,103 @@ void setAttributes(float lineWidth, GLenum face, GLenum fill) {
 
 }
 
+typedef struct
+{
+    uint16_t NumVerts;
+    float Vertices[256];
+    float Colors[256];
+} DatModel_t;
+
+/*
+ * Read a .dat file into a model object 
+ */
+void readDataFile(const char* fileName, DatModel_t* model) {
+    FILE* file = fopen(fileName, "r");
+	if(file!=NULL)
+	{
+		char line[256];
+
+		if(fgets(line, sizeof(line), file) != NULL) {
+				uint16_t val = (unsigned short) strtoul(line, NULL, 0);
+				model->NumVerts = val;
+				// printf("Num Verts = '%hu'\n", val);
+		}
+
+		uint16_t vertIndx = 0;
+
+		// Read in vertex positions
+		while(fgets(line, sizeof(line), file)) {
+
+			char* ptr = strtok(line, " ");
+
+			while(ptr != NULL)
+			{
+				float val = atof(ptr);
+				// printf("v_pos = '%f'\n", val);
+				// printf("WRITE vert[%hu] = %f \n", vertIndx, val);
+				model->Vertices[vertIndx++] = val;
+
+				ptr = strtok(NULL, " ");
+			}
+
+			if(vertIndx == (model->NumVerts * 4)) {
+				// printf("BREAK %hu \n", vertIndx);
+				break;
+			}
+		}
+
+		// Read in vertex colors
+		vertIndx = 0;
+		while(fgets(line, sizeof(line), file)) {
+
+			char* ptr = strtok(line, " ");
+
+			while(ptr != NULL)
+			{
+				float val = atof(ptr);
+				// printf("WRITE color[%hu] = %f \n", vertIndx, val);
+
+				model->Colors[vertIndx++] = val;
+				ptr = strtok(NULL, " ");
+			}
+		}
+
+		fclose(file);
+	} else {
+		printf("\nError: Cannot open data file!\n");
+	    fclose(file);
+	}
+	
+}
+
 /*
  * read and/or build the objects to be displayed.  Also sets up attributes that are
  * vertex related.
  */
-
 void buildObjects() {
 
+	// Retrieve the object model from file
+	DatModel_t model = {0};
+	char const* const fileName = "../res/models/diamond.dat";
+	readDataFile(fileName, &model);
+
+	size_t bufSize = model.NumVerts * 4;
+	nbrTriangles = model.NumVerts / 3;
+	GLfloat vertices[bufSize] = {0.0f};
+	memcpy(vertices, model.Vertices, sizeof(vertices));
+
+	GLfloat colors[bufSize] = {0.0f};
+	memcpy(colors, model.Colors, sizeof(colors));
+
+	// for(int v = 0; v < bufSize; v++) {
+	// 	printf("v[%hu] %f\n", v, vertices[v]);
+	// }
+
+	// for(int c = 0; c < bufSize; c++) {
+	// 	printf("c[%hu] %f\n", c, colors[c]);
+	// }
 	// GLfloat vertices[] = {
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f, -0.5f,  0.5f,  0.5f, 1.0f, -0.5f, -0.5f,  0.5f, 1.0f,
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f, -0.5f,  0.5f,  0.5f, 1.0f, -0.5f,  0.5f, -0.5f, 1.0f,
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f, -0.5f,  0.5f, -0.5f, 1.0f,  0.5f,  0.5f, -0.5f, 1.0f,
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f,  0.5f,  0.5f, -0.5f, 1.0f,  0.5f, -0.5f, -0.5f, 1.0f,
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f,  0.5f, -0.5f, -0.5f, 1.0f,  0.5f, -0.5f,  0.5f, 1.0f,
-	// 				   -0.5f, -0.5f, -0.5f, 1.0f,  0.5f, -0.5f,  0.5f, 1.0f, -0.5f, -0.5f,  0.5f, 1.0f,
-	// 				   -0.5f, -0.5f,  0.5f, 1.0f, -0.5f,  0.5f,  0.5f, 1.0f,  0.5f,  0.5f,  0.5f, 1.0f,
-	// 				   -0.5f, -0.5f,  0.5f, 1.0f,  0.5f,  0.5f,  0.5f, 1.0f,  0.5f, -0.5f,  0.5f, 1.0f,
-	// 				   -0.5f,  0.5f,  0.5f, 1.0f, -0.5f,  0.5f, -0.5f, 1.0f,  0.5f,  0.5f,  0.5f, 1.0f,
-	// 					0.5f,  0.5f,  0.5f, 1.0f,  0.5f,  0.5f, -0.5f, 1.0f, -0.5f,  0.5f, -0.5f, 1.0f,
-	// 					0.5f, -0.5f,  0.5f, 1.0f,  0.5f, -0.5f, -0.5f, 1.0f,  0.5f,  0.5f, -0.5f, 1.0f,
-	// 					0.5f, -0.5f,  0.5f, 1.0f,  0.5f,  0.5f, -0.5f, 1.0f,  0.5f,  0.5f,  0.5f, 1.0f
-	// };	
-
-	// GLfloat colors[] = {
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-	// 						0.0f, 0.0f, 0.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 1.0f,
-	// 						0.0f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f,
-	// 						0.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-	// 						0.0f, 1.0f, 1.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f,
-	// 						1.0f, 1.0f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, 1.0f,
-	// 						1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,
-	// 						1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f
-	// };
-
-	GLfloat vertices[] = {
-
-	   -0.5f, 0.0f, 0.5f, 1.0f, // pos z side face triangle
-		0.5f, 0.0f, 0.5f, 1.0f,
-		0.0f, 1.0f, 0.0f, 1.0f,
-
-		0.5f,  0.0f,  0.5f, 1.0f, // pos x side face triangle
-		0.5f,  0.0f, -0.5f, 1.0f,
-		0.0f,  1.0f,  0.0f, 1.0f,
-
-       -0.5f,  0.0f, -0.5f, 1.0f, // neg x side face triangle
-	   -0.5f,  0.0f,  0.5f, 1.0f,
-		0.0f,  1.0f,  0.0f, 1.0f,
-
-		0.5f,  0.0f, -0.5f, 1.0f, // neg z side face triangle
-       -0.5f,  0.0f, -0.5f, 1.0f,
-		0.0f,  1.0f,  0.0f, 1.0f,
-
-	   -0.5f, 0.0f, 0.5f,  1.0f, // bottom triangle 1
-	    0.5f, 0.0f, -0.5f, 1.0f,
-	   -0.5f, 0.0f, -0.5f, 1.0f,
-
-	   -0.5f, 0.0f, 0.5f,  1.0f, // bottom triangle 2
-		0.5f,  0.0f,  0.5f, 1.0f,
-	    0.5f, 0.0f, -0.5f, 1.0f,
-
-	};  
-
-	GLfloat colors[] = {
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 1 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
-
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 2 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
-
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 4 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.5f, 1.0f, 1.0f, 1.0f,
-
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 3 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
-
-		1.0f, 1.0f, 1.0f, 1.0f, // triangle 5 vcolors
-		1.0f, 1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f, 1.0f,
-
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 6 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
-	};
+	// printf("nbrTriangles = %hu\n", nbrTriangles);
 
 	glGenVertexArrays(1, vertexBuffers);
 	glBindVertexArray(vertexBuffers[0]);
@@ -321,6 +358,12 @@ void init(string vertexShader, string fragmentShader) {
 
 	mat4x4_identity(rotation);
 	mat4x4_identity(viewMatrix);
+
+	float eye_x[] = { 5.0f, 0.0f, 0.0f };
+	float center[] = { 0.0f, 0.0f, 0.0f };
+	float up[] = { 0.0f, 1.0f, 0.0f };
+	mat4x4_look_at(viewMatrix, eye_x, center, up);
+
 	mat4x4_ortho(projectionMatrix, -1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
 	// mat4x4_identity(projectionMatrix);
 
@@ -337,9 +380,10 @@ void display() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
 
-	float speed = 0.01f;
-	mat4x4_rotate_Y(rotation, rotation, speed);
-	//mat4x4_rotate_X(rotation, rotation, speed);
+	if(rotationOn) {
+		float speed = 0.01f;
+		mat4x4_rotate_Y(rotation, rotation, speed);
+	}
 
 	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
 	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat *)rotation);
@@ -370,7 +414,7 @@ void reshapeWindow(GLFWwindow* window, int width, int height)
 */
 int main(int argCount, char* argValues[]) {
 	GLFWwindow* window = nullptr;
-	window = glfwStartUp(argCount, argValues, "My Test of New Routines");
+	window = glfwStartUp(argCount, argValues, "EECS 4530 Programming Project 1");
 	init("../res/shaders/passthrough.vert", "../res/shaders/passthrough.frag");
 	glfwSetWindowSizeCallback(window, reshapeWindow);
 
