@@ -34,6 +34,7 @@ bool elements;
 int nbrTriangles, materialToUse = 0;
 int startTriangle = 0, endTriangle = 12;
 bool rotationOn = false;
+mat4x4 rotation;
 
 map<string, GLuint> locationMap;
 
@@ -59,8 +60,15 @@ static void error_callback(int error, const char* description)
  */
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
+	}
+	else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+		mat4x4_rotate_Y(rotation, rotation, 0.31419);
+	}
+	else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+		mat4x4_rotate_Y(rotation, rotation, -0.31419);
+	}
 }
 
 /*
@@ -180,13 +188,13 @@ void buildObjects() {
 		0.5f,  0.0f, -0.5f, 1.0f,
 		0.0f,  1.0f,  0.0f, 1.0f,
 
+       -0.5f,  0.0f, -0.5f, 1.0f, // neg x side face triangle
+	   -0.5f,  0.0f,  0.5f, 1.0f,
+		0.0f,  1.0f,  0.0f, 1.0f,
+
 		0.5f,  0.0f, -0.5f, 1.0f, // neg z side face triangle
        -0.5f,  0.0f, -0.5f, 1.0f,
 		0.0f,  1.0f,  0.0f, 1.0f,
-
-       -0.5f,  0.0f, -0.5f, 1.0f, // neg x side face triangle
-	   -0.5f,  0.0f,  0.5f, 1.0f,
-		0.0f,  1.0f,  0.0f, 1.0f
 
 	   -0.5f, 0.0f, 0.5f,  1.0f, // bottom triangle 1
 	    0.5f, 0.0f, -0.5f, 1.0f,
@@ -207,17 +215,17 @@ void buildObjects() {
 		0.0f, 1.0f, 0.0f, 1.0f,
 		0.0f, 0.0f, 1.0f, 1.0f,
 
+		1.0f, 0.0f, 0.0f, 1.0f, // triangle 4 vcolors
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.5f, 1.0f, 1.0f, 1.0f,
+
 		1.0f, 0.0f, 0.0f, 1.0f, // triangle 3 vcolors
 		0.0f, 1.0f, 0.0f, 1.0f,
 		0.0f, 0.0f, 1.0f, 1.0f,
 
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 4 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
-
-		1.0f, 0.0f, 0.0f, 1.0f, // triangle 5 vcolors
-		0.0f, 1.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f, // triangle 5 vcolors
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f,
 
 		1.0f, 0.0f, 0.0f, 1.0f, // triangle 6 vcolors
 		0.0f, 1.0f, 0.0f, 1.0f,
@@ -296,6 +304,8 @@ void init(string vertexShader, string fragmentShader) {
 
 	programID = buildProgram(vertexShader, fragmentShader);
 
+	mat4x4_identity(rotation);
+
 	buildObjects();
 
 	getLocations();
@@ -308,6 +318,13 @@ void init(string vertexShader, string fragmentShader) {
 void display() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
+
+	float speed = 0.01f;
+	mat4x4_rotate_Y(rotation, rotation, speed);
+	mat4x4_rotate_X(rotation, rotation, speed);
+
+	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
+	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat *)rotation);
 
 	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
 
