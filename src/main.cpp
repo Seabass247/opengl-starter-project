@@ -34,7 +34,7 @@ bool elements;
 int nbrTriangles, materialToUse = 0;
 int startTriangle = 0, endTriangle = 12;
 bool rotationOn = false;
-mat4x4 rotation;
+mat4x4 rotation, viewMatrix, projectionMatrix;
 
 map<string, GLuint> locationMap;
 
@@ -60,6 +60,12 @@ static void error_callback(int error, const char* description)
  */
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	float eye_x[] = { 1.0f, 0.0f, 0.0f };
+	float eye_y[] = { 0.0f, 5.0f, 0.0f };
+	float eye_z[] = { 0.0f, 0.0f, 1.0f };
+	float center[] = { 0.0f, 0.0f, 0.0f };
+	float up[] = { 0.0f, 1.0f, 0.0f };
+
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 	}
@@ -68,6 +74,15 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	}
 	else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
 		mat4x4_rotate_Y(rotation, rotation, -0.31419);
+    } 
+	else if (key == GLFW_KEY_X && action == GLFW_PRESS) {
+		mat4x4_look_at(viewMatrix, eye_x, center, up);
+	}
+	else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
+		mat4x4_look_at(viewMatrix, eye_y, center, eye_x);
+	}
+	else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
+		mat4x4_look_at(viewMatrix, eye_z, center, up);
 	}
 }
 
@@ -305,6 +320,9 @@ void init(string vertexShader, string fragmentShader) {
 	programID = buildProgram(vertexShader, fragmentShader);
 
 	mat4x4_identity(rotation);
+	mat4x4_identity(viewMatrix);
+	mat4x4_ortho(projectionMatrix, -1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
+	// mat4x4_identity(projectionMatrix);
 
 	buildObjects();
 
@@ -321,10 +339,15 @@ void display() {
 
 	float speed = 0.01f;
 	mat4x4_rotate_Y(rotation, rotation, speed);
-	mat4x4_rotate_X(rotation, rotation, speed);
+	//mat4x4_rotate_X(rotation, rotation, speed);
 
 	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
 	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat *)rotation);
+
+	GLuint viewMatrixLocation = glGetUniformLocation(programID, "viewingMatrix");
+	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat *) viewMatrix);
+	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
+	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat *)projectionMatrix);
 
 	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
 

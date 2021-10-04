@@ -20,5 +20,8 @@ void main()
 {
 	Color = vColor;
 	Normal = vNormal;
-    gl_Position = modelingMatrix * vPosition;
+    gl_Position = projectionMatrix * 
+			      viewingMatrix * 
+				  modelingMatrix * 
+				  vPosition;
 }
