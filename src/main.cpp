@@ -59,6 +59,7 @@ void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 	GLenum fill = GL_FILL);
 void buildObjects();
 void getLocations();
+void SetUpDirectionalLighting();
 void init(string vertexShader, string fragmentShader);
 
 /*
@@ -412,6 +413,21 @@ void displayDirectional() {
 	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat*)viewMatrix);
 	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
 	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat*)projectionMatrix);
+	SetUpDirectionalLighting();
+
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+	currentT = currentT + 0.01f;
+	if (currentT > 2.0f * 3.14159f) {
+		currentT -= 2.0f * 3.14159f;
+	}
+}
+
+/*
+ * Set up the parameters for directional lighting.
+ */
+void SetUpDirectionalLighting()
+{	
 	GLfloat ambientLight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
 	glUniform4fv(ambientLightLocation, 1, ambientLight);
@@ -432,11 +448,6 @@ void displayDirectional() {
 	glUniform3fv(halfVectorLocation, 1, halfVector);
 
 	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
-
-	currentT = currentT + 0.01f;
-	if (currentT > 2.0f * 3.14159f) {
-		currentT -= 2.0f * 3.14159f;
-	}
 }
 
 /*
