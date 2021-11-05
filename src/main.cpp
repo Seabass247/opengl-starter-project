@@ -269,7 +269,8 @@ void buildObjects() {
  * Read object in from obj file.
  */
 	GLfloat *objVertices= nullptr, *objNormals=nullptr;
-	objVertices = readOBJFile("../res/models/cubedos.obj", nbrTriangles, objNormals);
+
+	objVertices = readOBJFile("../res/models/triangulatedCowDos.obj", nbrTriangles, objNormals);
 
 	glGenBuffers(1, &(arrayBuffers[0]));
 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
@@ -398,7 +399,13 @@ void displayDirectional() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
 	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
 	mat4x4 translation, mTransform;
-	mat4x4_translate(translation, 3.0f* sin(currentT * 2.0 * 3.14159f), 0.0f, 2.0f*cos(currentT * 2.0 * 3.14159f));
+
+	float xt = 5.0f * sinf(currentT + 3.14159f / 2.0f);
+	float yt = 0.0f;
+	float zt = 5.0f * sinf(currentT * 2.0f);
+
+	mat4x4_translate(translation, xt, yt, zt);
+
 	mat4x4_mul(mTransform, translation, rotation);
 	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)mTransform);
 	GLuint viewMatrixLocation = glGetUniformLocation(programID, "viewingMatrix");
@@ -426,9 +433,9 @@ void displayDirectional() {
 
 	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
 
-	currentT = currentT + 0.01;
-	if (currentT > 1.0f) {
-		currentT -= 1.0f;
+	currentT = currentT + 0.01f;
+	if (currentT > 2.0f * 3.14159f) {
+		currentT -= 2.0f * 3.14159f;
 	}
 }
 
