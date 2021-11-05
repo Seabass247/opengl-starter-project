@@ -1,0 +1,16 @@
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  --- objReader.h ---
+//
+//////////////////////////////////////////////////////////////////////////////
+
+#ifndef __OBJ_READER_H__
+#define __OBJ_READER_H__
+
+#include <cstdlib>
+#include <string>
+
+float* readOBJFile (const char* filename, int &nbrTriangles, float * &normalArray);
+
+#endif // __OBJ_READER_H__

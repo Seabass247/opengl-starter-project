@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "LoadShaders.h"
+#include "objReader.h"
 #include "linmath.h"
 //#include "vgl.h"
 #include <map>
@@ -47,8 +48,8 @@ int startTriangle = 0, endTriangle = 12;
 bool rotationOn = true;
 bool orthoViewEnabled = true;
 mat4x4 rotation, viewMatrix, projectionMatrix;
-
 map<string, GLuint> locationMap;
+float currentT = 0.0f;
 
 // Prototypes
 GLuint buildProgram(string vertexShaderName, string fragmentShaderName);
@@ -59,6 +60,7 @@ void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 void buildObjects();
 void getLocations();
 void init(string vertexShader, string fragmentShader);
+
 /*
  * Error callback routine for glfw -- uses cstdio 
  */
@@ -260,51 +262,36 @@ void readDataFile(const char* fileName, DatModel_t* model) {
  * vertex related.
  */
 void buildObjects() {
-
-	// Retrieve the object model from file
-	DatModel_t model = {0};
-	char const* const fileName = "../res/models/diamond.dat";
-	readDataFile(fileName, &model);
-
-	size_t bufSize = model.NumVerts * 4;
-	nbrTriangles = model.NumVerts / 3;
-	GLfloat vertices[bufSize] = {0.0f};
-	memcpy(vertices, model.Vertices, sizeof(vertices));
-
-	GLfloat colors[bufSize] = {0.0f};
-	memcpy(colors, model.Colors, sizeof(colors));
-
-	// for(int v = 0; v < bufSize; v++) {
-	// 	printf("v[%hu] %f\n", v, vertices[v]);
-	// }
-
-	// for(int c = 0; c < bufSize; c++) {
-	// 	printf("c[%hu] %f\n", c, colors[c]);
-	// }
-	// GLfloat vertices[] = {
-	// printf("nbrTriangles = %hu\n", nbrTriangles);
-
 	glGenVertexArrays(1, vertexBuffers);
 	glBindVertexArray(vertexBuffers[0]);
 
-	// Alternately...
-	// GLuint   vaoID;
-	// glGenVertexArrays(1, &vaoID);
-	// glBindVertexArray(vaoID);
-	//
-
 /*
- * Test code for internal object.
+ * Read object in from obj file.
  */
-	nbrTriangles = 6;
+	GLfloat *objVertices= nullptr, *objNormals=nullptr;
+	objVertices = readOBJFile("../res/models/cubedos.obj", nbrTriangles, objNormals);
+
 	glGenBuffers(1, &(arrayBuffers[0]));
 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
+	GLuint objVerticesSize = nbrTriangles * 3.0 * 4.0 * sizeof(GLfloat);
+	GLuint objNormalsSize = nbrTriangles * 3.0 * 3.0 * sizeof(GLfloat);
+	// The obj has no colors associated with the vertices.  I'm going to make it
+	// gray for right now.
+
+	khronos_usize_t numVerts = nbrTriangles * 3.0 * 4.0;
+	GLfloat objColors[numVerts] = {0}; // new GLfloat[nbrTriangles * 3.0 * 4.0];
+	for (int i = 0; i < numVerts; i++) {
+		objColors[i] = 0.7f;
+	}
+	GLuint objColorsSize = objVerticesSize;
 	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(vertices) + sizeof(colors),
+		objVerticesSize + objColorsSize + objNormalsSize,
 		NULL, GL_STATIC_DRAW);
 	//                               offset in bytes   size in bytes     ptr to data    
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(colors), colors);
+
+	glBufferSubData(GL_ARRAY_BUFFER, 0, objVerticesSize, objVertices);
+	glBufferSubData(GL_ARRAY_BUFFER, objVerticesSize, objColorsSize, objColors);
+	glBufferSubData(GL_ARRAY_BUFFER, objVerticesSize+objColorsSize, objNormalsSize, objNormals);
 	/*
 	 * Set up variables into the shader programs (Note:  We need the
 	 * shaders loaded and built into a program before we do this)
@@ -312,10 +299,13 @@ void buildObjects() {
 	GLuint vPosition = glGetAttribLocation(programID, "vPosition");
 	glEnableVertexAttribArray(vPosition);
 	glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	GLuint vColors = glGetAttribLocation(programID, "vColor");
+	glEnableVertexAttribArray(vColors);
+	glVertexAttribPointer(vColors, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(objVerticesSize));
+	GLuint vNormal = glGetAttribLocation(programID, "vNormal");
+	glEnableVertexAttribArray(vNormal);
+	glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(objVerticesSize+objColorsSize));
 
-	GLuint vColor = glGetAttribLocation(programID, "vColor");
-	glEnableVertexAttribArray(vColor);
-	glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(vertices)));
 }
 
 /*
@@ -364,8 +354,7 @@ void init(string vertexShader, string fragmentShader) {
 	float up[] = { 0.0f, 1.0f, 0.0f };
 	mat4x4_look_at(viewMatrix, eye_x, center, up);
 
-	mat4x4_ortho(projectionMatrix, -1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
-	// mat4x4_identity(projectionMatrix);
+	mat4x4_ortho(projectionMatrix, -10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
 
 	buildObjects();
 
@@ -393,6 +382,180 @@ void display() {
 	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
 	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat *)projectionMatrix);
 
+	GLfloat ambientLight[] = { 0.8, 0.8, 0.8, 1.0 };
+	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
+	glUniform4fv(ambientLightLocation, 1, ambientLight);
+
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+}
+
+/*
+ * The display routine is basically unchanged at this point.
+ */
+void displayDirectional() {
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
+	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
+	mat4x4 translation, mTransform;
+	mat4x4_translate(translation, 3.0f* sin(currentT * 2.0 * 3.14159f), 0.0f, 2.0f*cos(currentT * 2.0 * 3.14159f));
+	mat4x4_mul(mTransform, translation, rotation);
+	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)mTransform);
+	GLuint viewMatrixLocation = glGetUniformLocation(programID, "viewingMatrix");
+	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat*)viewMatrix);
+	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
+	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat*)projectionMatrix);
+	GLfloat ambientLight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
+	glUniform4fv(ambientLightLocation, 1, ambientLight);
+	GLuint directionalLightDirectionLoc = glGetUniformLocation(programID, "directionalLightDirection");
+	GLuint directionalLightColorLoc = glGetUniformLocation(programID, "directionalLightColor");
+	GLuint halfVectorLocation = glGetUniformLocation(programID, "halfVector");
+	GLuint shininessLoc = glGetUniformLocation(programID, "shininess");
+	GLuint strengthLoc = glGetUniformLocation(programID, "strength");
+	GLfloat directionalLightDirection[] = { 0.0f, 0.7071f, 0.7071f };
+	GLfloat directionalLightColor[] = { 1.0f, 1.0f, 1.0f };
+	GLfloat shininess = 25.0f;
+	GLfloat strength = 1.0f;
+	GLfloat halfVector[] = { 0.0f, 0.45514f, 0.924f };
+	glUniform1f(shininessLoc, shininess);
+	glUniform1f(strengthLoc, strength);
+	glUniform3fv(directionalLightDirectionLoc, 1, directionalLightDirection);
+	glUniform3fv(directionalLightColorLoc, 1, directionalLightColor);
+	glUniform3fv(halfVectorLocation, 1, halfVector);
+
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+	currentT = currentT + 0.01;
+	if (currentT > 1.0f) {
+		currentT -= 1.0f;
+	}
+}
+
+/*
+ * Display code for point source -- this is much too long of a routine.  
+ * I will be breaking it up at some point.  Also, we only need to update some 
+ * of these items when the value changes -- not on every draw.
+ */
+void displayPointSource() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
+	/*
+	 * Set up the model, view, projection and normal matrices.
+	 */
+	mat4x4 MVMatrix, MVPMatrix;
+	mat4x4_mul(MVMatrix, viewMatrix, rotation);
+	mat4x4_mul(MVPMatrix, projectionMatrix, MVMatrix);
+	glUniformMatrix4fv(locationMap["MVMatrix"], 1, false, (const GLfloat*)MVMatrix);
+	glUniformMatrix4fv(locationMap["MVPMatrix"], 1, false, (const GLfloat*)MVPMatrix);
+	/*
+	 *  This code is designed to invert and transpose the matrix
+	 *  needed to modify normals.
+	 */
+	for (int i = 0; i < 3; i++) {  // zero out last row and column.
+		MVMatrix[i][3] = 0;
+		MVMatrix[3][i] = 0;
+	}
+	MVMatrix[3][3] = 1;
+	mat4x4 inverted;  
+	mat4x4_invert(inverted, MVMatrix);  // inverting should give the proper
+	                                    // matrix in the upper 3x3.
+	GLfloat normalMatrix[3][3];
+
+	for (int row = 0; row < 3; row++) {  // copy it over and transpose it.
+		for (int column = 0; column < 3; column++) {
+			normalMatrix[row][column] = inverted[column][row];
+		}
+	}
+	glUniformMatrix3fv(locationMap["normalMatrix"], 1, false, (const GLfloat*)normalMatrix);
+
+	/*
+	 * set up the lighting information for the pointsource shader
+	 */
+	GLfloat ambientLight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
+	glUniform4fv(ambientLightLocation, 1, ambientLight);
+	GLuint lightPositionLoc = glGetUniformLocation(programID, "lightPosition");
+	GLuint lightColorLoc = glGetUniformLocation(programID, "lightColor");
+	GLuint shininessLoc = glGetUniformLocation(programID, "shininess");
+	GLuint strengthLoc = glGetUniformLocation(programID, "strength");
+	GLfloat lightPosition[] = { 0.0f, 10.0f, 0.0f };
+	GLfloat lightColor[] = { 1.0f, 1.0f, 1.0f };
+	GLfloat eyeDirection[] = { 0.0, 0.0, -1.0 }; 
+	GLfloat shininess = 25.0f;
+	GLfloat strength = 1.0f;
+	glUniform1f(shininessLoc, shininess);
+	glUniform1f(strengthLoc, strength);
+	glUniform3fv(lightPositionLoc, 1, lightPosition);
+	glUniform3fv(lightColorLoc, 1, lightColor);
+	glUniform1f(locationMap["constantAttenuation"], 1.0f);
+	glUniform1f(locationMap["linearAttenuation"], 0.0f);
+	glUniform1f(locationMap["quadraticAttenuation"], 0.0f);
+	glUniform3fv(locationMap["eyeDirection"], 1, eyeDirection);
+
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+}
+
+/*
+ *  working on this one -- just copied code from pointsource as a starting 
+ *  point.
+ * 
+ */
+void displaySpotlight() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
+	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
+	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)rotation);
+	GLuint viewMatrixLocation = glGetUniformLocation(programID, "viewingMatrix");
+	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat*)viewMatrix);
+	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
+	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat*)projectionMatrix);
+	mat4x4 MVMatrix, MVPMatrix;
+	mat4x4_mul(MVMatrix, viewMatrix, rotation);
+	mat4x4_mul(MVPMatrix, projectionMatrix, MVMatrix);
+	glUniformMatrix4fv(locationMap["MVMatrix"], 1, false, (const GLfloat*)MVMatrix);
+	glUniformMatrix4fv(locationMap["MVPMatrix"], 1, false, (const GLfloat*)MVPMatrix);
+	/*
+	 *  This code is designed to invert and transpose the matrix
+	 *  needed to modify normals.
+	 */
+	for (int i = 0; i < 3; i++) {  // zero out last row and column.
+		MVMatrix[i][3] = 0;
+		MVMatrix[3][i] = 0;
+	}
+	MVMatrix[3][3] = 1;
+	mat4x4 inverted;
+	mat4x4_invert(inverted, MVMatrix);  // inverting should give the proper
+										// matrix in the upper 3x3.
+	GLfloat normalMatrix[3][3];
+
+	for (int row = 0; row < 3; row++) {  // copy it over and transpose it.
+		for (int column = 0; column < 3; column++) {
+			normalMatrix[row][column] = inverted[column][row];
+		}
+	}
+	glUniformMatrix3fv(locationMap["normalMatrix"], 1, false, (const GLfloat*)normalMatrix);
+
+	GLfloat ambientLight[] = { 0.8, 0.8, 0.8, 1.0 };
+	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
+	glUniform4fv(ambientLightLocation, 1, ambientLight);
+	GLuint lightPositionLoc = glGetUniformLocation(programID, "lightPosition");
+	GLuint lightColorLoc = glGetUniformLocation(programID, "lightColor");
+	GLuint shininessLoc = glGetUniformLocation(programID, "shininess");
+	GLuint strengthLoc = glGetUniformLocation(programID, "strength");
+	GLfloat lightPosition[] = { 0.0f, 10.0f, 0.0f };
+	GLfloat lightColor[] = { 1.0f, 1.0f, 1.0f };
+	GLfloat eyeDirection[] = { 0.0, 0.0, -1.0 };
+	GLfloat shininess = 25.0f;
+	GLfloat strength = 1.0f;
+	glUniform1f(shininessLoc, shininess);
+	glUniform1f(strengthLoc, strength);
+	glUniform3fv(lightPositionLoc, 1, lightPosition);
+	glUniform3fv(lightColorLoc, 1, lightColor);
+	glUniform1f(locationMap["constantAttenuation"], 1.0f);
+	glUniform1f(locationMap["linearAttenuation"], 0.0f);
+	glUniform1f(locationMap["quadraticAttenuation"], 0.0f);
+	glUniform3fv(locationMap["eyeDirection"], 1, eyeDirection);
+
 	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
 
 }
@@ -414,13 +577,13 @@ void reshapeWindow(GLFWwindow* window, int width, int height)
 */
 int main(int argCount, char* argValues[]) {
 	GLFWwindow* window = nullptr;
-	window = glfwStartUp(argCount, argValues, "EECS 4530 Programming Project 1");
+	window = glfwStartUp(argCount, argValues, "EECS 4530 Programming Project 2");
 	init("../res/shaders/passthrough.vert", "../res/shaders/passthrough.frag");
 	glfwSetWindowSizeCallback(window, reshapeWindow);
 
 	while (!glfwWindowShouldClose(window))
 	{
-		display();
+		displayDirectional();
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	};
