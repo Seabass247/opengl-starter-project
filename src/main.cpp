@@ -25,6 +25,8 @@ using namespace std;
 
 #define BUFFER_OFFSET(x)  ((const void*) (x))
 
+#define TOTAL_NUM_OBJECTS 1
+
 GLuint programID;
 /*
 * Arrays to store the indices/names of the Vertex Array Objects and
@@ -57,7 +59,7 @@ GLFWwindow * glfwStartUp(int& argCount, char* argValues[],
 	string windowTitle = "No Title", int width = 500, int height = 500);
 void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 	GLenum fill = GL_FILL);
-void buildObjects();
+void buildObjects(int object_indx);
 void getLocations();
 void SetUpDirectionalLighting();
 void buildModelMatrix(mat4x4& translation1, float scaleFactor, float deltax, float deltay, float deltaz);
@@ -263,19 +265,20 @@ void readDataFile(const char* fileName, DatModel_t* model) {
  * read and/or build the objects to be displayed.  Also sets up attributes that are
  * vertex related.
  */
-void buildObjects() {
-	glGenVertexArrays(1, vertexBuffers);
-	glBindVertexArray(vertexBuffers[0]);
+void buildObjects(const char *obj_path, int obj_indx) {
+	glGenVertexArrays(TOTAL_NUM_OBJECTS, vertexBuffers);
+	glBindVertexArray(vertexBuffers[obj_indx]);
 
 /*
  * Read object in from obj file.
  */
 	GLfloat *objVertices= nullptr, *objNormals=nullptr;
 
-	objVertices = readOBJFile("../res/models/triangulatedCowDos.obj", nbrTriangles, objNormals);
+	// objVertices = readOBJFile("../res/models/triangulatedCowDos.obj", nbrTriangles, objNormals);
+	objVertices = readOBJFile(obj_path, nbrTriangles, objNormals);
 
-	glGenBuffers(1, &(arrayBuffers[0]));
-	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
+	glGenBuffers(1, &(arrayBuffers[obj_indx]));
+	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[obj_indx]);
 	GLuint objVerticesSize = nbrTriangles * 3.0 * 4.0 * sizeof(GLfloat);
 	GLuint objNormalsSize = nbrTriangles * 3.0 * 3.0 * sizeof(GLfloat);
 	// The obj has no colors associated with the vertices.  I'm going to make it
@@ -359,7 +362,7 @@ void init(string vertexShader, string fragmentShader) {
 
 	mat4x4_ortho(projectionMatrix, -10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
 
-	buildObjects();
+	buildObjects("../res/models/triangulatedCowDos.obj", 0);
 
 	getLocations();
 
