@@ -286,6 +286,7 @@ void init(string vertexShader, string fragmentShader) {
 	float center[] = { 0.0f, 0.0f, 0.0f };
 	float up[] = { 0.0f, 1.0f, 0.0f };
 	float right[] = { 1.0f, 0.0f, 0.0f };
+
 	// mat4x4_look_at(viewMatrix, eye_x, center, up);
 	// mat4x4_look_at(viewMatrix, eye_y, center, right);
 	mat4x4_look_at(viewMatrix, eye_z, center, up);

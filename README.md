@@ -1,6 +1,6 @@
-# OpenGLSampleCmake
+# OpenGL Demo Project
 
-Sample CMake for OpenGL based projects.
+Simple OpenGL project written in C/C++ and uses CMake to build.
 
 ## Build dependencies
  - CMake (to download click [here](https://cmake.org/download/))
