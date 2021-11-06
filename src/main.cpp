@@ -60,6 +60,7 @@ void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 void buildObjects();
 void getLocations();
 void SetUpDirectionalLighting();
+void buildModelMatrix(mat4x4& translation1, float scaleFactor, float deltax, float deltay, float deltaz);
 void init(string vertexShader, string fragmentShader);
 
 /*
@@ -398,29 +399,63 @@ void display() {
 void displayDirectional() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
-	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
-	mat4x4 translation, mTransform;
+	glUseProgram(programID);
+	mat4x4 translation1, translation2, translation3, translation4;
+	float scaleFactor, deltax, deltay, deltaz;
 
 	float xt = 5.0f * sinf(currentT + 3.14159f / 2.0f);
 	float yt = 0.0f;
 	float zt = 5.0f * sinf(currentT * 2.0f);
 
-	mat4x4_translate(translation, xt, yt, zt);
+	buildModelMatrix(translation1, 0.5f, xt, yt, zt);
+	// buildModelMatrix(translation2, 0.1f, -0.5f, -0.5f, 0.0f);
+	// buildModelMatrix(translation3, 0.3f, 0.5f, 0.5f, 0.0f);
+	// buildModelMatrix(translation4, 0.05f, 0.5f, -0.5, 0.0f);
 
-	mat4x4_mul(mTransform, translation, rotation);
-	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)mTransform);
+	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
+
+	glBindVertexArray(vertexBuffers[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
+	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat *)translation1);
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles*3);
+
+	// glBindVertexArray(vertexBuffers[1]);
+	// glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[1]);
+	// glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)translation2);
+	// glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+	// glBindVertexArray(vertexBuffers[2]);
+	// glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[2]);
+	// mat4x4_mul(translation3, translation3, rotation);
+	// glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)translation3);
+	// glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
+	// glBindVertexArray(vertexBuffers[3]);
+	// glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[3]);
+	// glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)translation4);
+	// glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+
 	GLuint viewMatrixLocation = glGetUniformLocation(programID, "viewingMatrix");
 	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat*)viewMatrix);
 	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
 	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat*)projectionMatrix);
 	SetUpDirectionalLighting();
 
-	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
-
 	currentT = currentT + 0.01f;
 	if (currentT > 2.0f * 3.14159f) {
 		currentT -= 2.0f * 3.14159f;
 	}
+}
+
+void buildModelMatrix(mat4x4& translation1, float scaleFactor, float deltax, float deltay, float deltaz)
+{
+	mat4x4 temp;
+	mat4x4 scale;
+	mat4x4_identity(translation1);
+	mat4x4_identity(scale);
+	mat4x4_scale_aniso(scale, scale, scaleFactor, scaleFactor, scaleFactor);
+	mat4x4_translate(temp, deltax, deltay, deltaz);
+	mat4x4_mul(translation1, temp, scale);
 }
 
 /*
