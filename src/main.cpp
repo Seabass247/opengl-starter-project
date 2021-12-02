@@ -22,7 +22,7 @@
 #include <map>
 #include <vector>
 #include "ParticleInterface.h"
-#include "FountainParticles.h"
+#include "SnowParticles.h"
 using namespace std;
 
 #define BUFFER_OFFSET(x)  ((const void*) (x))
@@ -54,7 +54,7 @@ bool orthoViewEnabled = false;
 mat4x4 rotation, viewMatrix, projectionMatrix;
 map<string, GLuint> locationMap;
 float currentT = 0.0f;
-FountainParticles myParticleSystem;
+SnowParticles myParticleSystem;
 
 // Prototypes
 GLuint buildProgram(string vertexShaderName, string fragmentShaderName);
@@ -257,7 +257,7 @@ void readDataFile(const char* fileName, DatModel_t* model) {
  * vertex related.
  */
 void buildObjects() {
-	myParticleSystem.init(1000);
+	myParticleSystem.init(2500);
 
 	glGenVertexArrays(1, vertexBuffers);
 	glBindVertexArray(vertexBuffers[0]);
@@ -353,7 +353,7 @@ void init(string vertexShader, string fragmentShader) {
 
 	float eye_custom[] = { CAMERA_DISTANCE, CAMERA_DISTANCE, 0.0f };
 
-	float center[] = { 0.0f, 0.0f, 0.0f };
+	float center[] = { 0.0f, CAMERA_DISTANCE, 0.0f };
 	float up[] = { 0.0f, 1.0f, 0.0f };
 	float right[] = { 1.0f, 0.0f, 0.0f };
     mat4x4_look_at(viewMatrix, eye_custom, center, up);
@@ -402,17 +402,11 @@ void display() {
  * The display routine is basically unchanged at this point.
  */
 void displayDirectional() {
-	myParticleSystem.generate(10);
+	myParticleSystem.generate(1);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
 	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
 	mat4x4 translation, mTransform;
-
-	float xt = 5.0f * sinf(currentT + 3.14159f / 2.0f);
-	float yt = 0.0f;
-	float zt = 5.0f * sinf(currentT * 2.0f);
-
-	mat4x4_translate(translation, xt, yt, zt);
 
 	mat4x4_mul(mTransform, translation, rotation);
 	glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat*)mTransform);

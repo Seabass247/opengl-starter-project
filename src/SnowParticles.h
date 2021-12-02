@@ -1,10 +1,10 @@
-#ifndef __FOUNTAINPARTICLES_H__
-#define __FOUNTAINPARTICLES_H__
+#ifndef __SnowParticles_H__
+#define __SnowParticles_H__
 #include <random>
 #include <functional>
 
 #include "ParticleInterface.h"
-class FountainParticles :
+class SnowParticles :
     public ParticleInterface
 {
 private:
@@ -17,6 +17,9 @@ private:
     std::default_random_engine generator;
     std::normal_distribution<double> velocityDistribution;
     std::uniform_real_distribution<double> angleDistribution;
+    std::uniform_real_distribution<double> posXDistribution;
+    std::uniform_real_distribution<double> posYDistribution;
+    std::uniform_real_distribution<double> posZDistribution;
 
 public:
     void init(int maxParticles = 1000);
@@ -29,7 +32,7 @@ public:
     float* getOrientations() { return orientations; }
     int getNumberOfParticles(){ return nbrOfParticles;}
     int getMaxParticles() { return maxParticles; }
-    FountainParticles();
+    SnowParticles();
 };
 
 #endif

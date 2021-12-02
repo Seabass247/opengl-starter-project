@@ -1,6 +1,6 @@
-#include "FountainParticles.h"
+#include "SnowParticles.h"
 
-void FountainParticles::init(int maxParticles)
+void SnowParticles::init(int maxParticles)
 {
 	auto releaseArray = [](auto* arrayName) { if (arrayName != nullptr) delete[] arrayName; };
 
@@ -17,22 +17,22 @@ void FountainParticles::init(int maxParticles)
 	return;
 }
 
-void FountainParticles::generate(int maxNewParticles)
+void SnowParticles::generate(int maxNewParticles)
 {
 	if (maxNewParticles + nbrOfParticles < maxParticles) { // generate the particles
 		for (int currentParticle = 0; currentParticle < maxNewParticles; ++currentParticle) {
-			positions[(nbrOfParticles + currentParticle) * 3] = 0.0f;
-			positions[(nbrOfParticles + currentParticle) * 3 + 1] = 0.0f;
-			positions[(nbrOfParticles + currentParticle) * 3 + 2] = 0.0f;
+			positions[(nbrOfParticles + currentParticle) * 3] = -15.0f + 30.0f * posXDistribution(generator);
+			positions[(nbrOfParticles + currentParticle) * 3 + 1] = 30.0f;
+			positions[(nbrOfParticles + currentParticle) * 3 + 2] = -15.0f + 30.0f * posZDistribution(generator);
 			double angle = angleDistribution(generator) * 2 * 3.14159 - 3.14159;
-			double initialUpward = velocityDistribution(generator) * 5.0 + 32.0;
-			
+			double initY = 0.0f;
+
 			velocities[(nbrOfParticles + currentParticle) * 3] = cos(angle);
-			velocities[(nbrOfParticles + currentParticle) * 3 + 1] = initialUpward;
+			velocities[(nbrOfParticles + currentParticle) * 3 + 1] = initY;
 			velocities[(nbrOfParticles + currentParticle) * 3 + 2] = sin(angle);
 
 			accelerations[(nbrOfParticles + currentParticle) * 3] = 0.0;
-			accelerations[(nbrOfParticles + currentParticle) * 3 + 1] = -32.2;
+			accelerations[(nbrOfParticles + currentParticle) * 3 + 1] = -0.1;
 			accelerations[(nbrOfParticles + currentParticle) * 3 + 2] = 0.0;
 
 			orientations[(nbrOfParticles + currentParticle) * 4] = 1.0;
@@ -44,7 +44,7 @@ void FountainParticles::generate(int maxNewParticles)
 	}
 }
 
-void FountainParticles::update(float timeStep)
+void SnowParticles::update(float timeStep)
 {
 	// TODO Auto-generated method stub
 	float newPosition[3];
@@ -66,7 +66,7 @@ void FountainParticles::update(float timeStep)
 	}
 }
 
-void FountainParticles::compact()
+void SnowParticles::compact()
 {
 	int current, i;
 
@@ -85,7 +85,7 @@ void FountainParticles::compact()
 	}
 }
 
-FountainParticles::FountainParticles()
+SnowParticles::SnowParticles()
 {
 	positions = nullptr;
 	velocities = nullptr;
