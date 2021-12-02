@@ -19,7 +19,7 @@ out vec3 Normal;
 void main()
 {
 	Color = vColor;
-	Normal = vNormal;
+	Normal = normalize(normalMatrix*vNormal);
     gl_Position = projectionMatrix * 
 			      viewingMatrix * 
 				  modelingMatrix * 

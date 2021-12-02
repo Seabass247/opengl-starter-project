@@ -21,9 +21,13 @@
 //#include "vgl.h"
 #include <map>
 #include <vector>
+#include "ParticleInterface.h"
+#include "FountainParticles.h"
 using namespace std;
 
 #define BUFFER_OFFSET(x)  ((const void*) (x))
+
+#define CAMERA_DISTANCE 15.0f
 
 GLuint programID;
 /*
@@ -46,10 +50,11 @@ bool elements;
 int nbrTriangles, materialToUse = 0;
 int startTriangle = 0, endTriangle = 12;
 bool rotationOn = true;
-bool orthoViewEnabled = true;
+bool orthoViewEnabled = false;
 mat4x4 rotation, viewMatrix, projectionMatrix;
 map<string, GLuint> locationMap;
 float currentT = 0.0f;
+FountainParticles myParticleSystem;
 
 // Prototypes
 GLuint buildProgram(string vertexShaderName, string fragmentShaderName);
@@ -60,6 +65,7 @@ void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 void buildObjects();
 void getLocations();
 void init(string vertexShader, string fragmentShader);
+void SetUpDirectionalLighting();
 
 /*
  * Error callback routine for glfw -- uses cstdio 
@@ -74,47 +80,36 @@ static void error_callback(int error, const char* description)
  */
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	float eye_x[] = { 5.0f, 0.0f, 0.0f };
-	float eye_y[] = { 0.0f, 5.0f, 0.0f };
-	float eye_z[] = { 0.0f, 0.0f, 5.0f };
+	float eye_x[] = { CAMERA_DISTANCE, 0.0f, 0.0f };
+	float eye_y[] = { 0.0f, CAMERA_DISTANCE, 0.0f };
+	float eye_z[] = { 0.0f, 0.0f, CAMERA_DISTANCE };
 	float center[] = { 0.0f, 0.0f, 0.0f };
 	float up[] = { 0.0f, 1.0f, 0.0f };
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 	}
-	else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-		mat4x4_rotate_Y(rotation, rotation, 0.31419);
-	}
-	else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-		mat4x4_rotate_Y(rotation, rotation, -0.31419);
-    } 
 	else if (key == GLFW_KEY_X && action == GLFW_PRESS) {
+		// Look down the X axis
 		mat4x4_look_at(viewMatrix, eye_x, center, up);
 	}
 	else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
+		// Look down the Y axis
 		mat4x4_look_at(viewMatrix, eye_y, center, eye_x);
 	}
 	else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
+		// Look down the Z axis
 		mat4x4_look_at(viewMatrix, eye_z, center, up);
 	}
 	else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+		// Toggle view between orthographic and perspective
 		orthoViewEnabled = !orthoViewEnabled;
 
-		// Toggle view between orthographic and perspective
 		if(orthoViewEnabled) {
-			mat4x4_ortho(projectionMatrix, -1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
+			mat4x4_ortho(projectionMatrix, -1*CAMERA_DISTANCE, CAMERA_DISTANCE, -1*CAMERA_DISTANCE, CAMERA_DISTANCE, -100.0f, 100.0f);
 		} else {
 			mat4x4_perspective(projectionMatrix, 45.0f/180.0f * 3.14159f, 1.0f, 0.01f, 1000.0f);
 		}
-	}
-	else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-		// Toggle rotation off
-		rotationOn = false;
-	}
-	else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-		// Toggle rotation off
-		rotationOn = true;
 	}
 }
 
@@ -262,6 +257,8 @@ void readDataFile(const char* fileName, DatModel_t* model) {
  * vertex related.
  */
 void buildObjects() {
+	myParticleSystem.init(1000);
+
 	glGenVertexArrays(1, vertexBuffers);
 	glBindVertexArray(vertexBuffers[0]);
 
@@ -270,7 +267,7 @@ void buildObjects() {
  */
 	GLfloat *objVertices= nullptr, *objNormals=nullptr;
 
-	objVertices = readOBJFile("../res/models/triangulatedCowDos.obj", nbrTriangles, objNormals);
+	objVertices = readOBJFile("../res/models/snowflake.obj", nbrTriangles, objNormals);
 
 	glGenBuffers(1, &(arrayBuffers[0]));
 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
@@ -350,12 +347,22 @@ void init(string vertexShader, string fragmentShader) {
 	mat4x4_identity(rotation);
 	mat4x4_identity(viewMatrix);
 
-	float eye_x[] = { 5.0f, 0.0f, 0.0f };
+	float eye_x[] = { CAMERA_DISTANCE, 0.0f, 0.0f };
+	float eye_y[] = { 0.0f, CAMERA_DISTANCE, 0.0f };
+	float eye_z[] = { 0.0f, 0.0f, CAMERA_DISTANCE };
+
+	float eye_custom[] = { CAMERA_DISTANCE, CAMERA_DISTANCE, 0.0f };
+
 	float center[] = { 0.0f, 0.0f, 0.0f };
 	float up[] = { 0.0f, 1.0f, 0.0f };
-	mat4x4_look_at(viewMatrix, eye_x, center, up);
+	float right[] = { 1.0f, 0.0f, 0.0f };
+    mat4x4_look_at(viewMatrix, eye_custom, center, up);
 
-	mat4x4_ortho(projectionMatrix, -10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
+	if(orthoViewEnabled) {
+		mat4x4_ortho(projectionMatrix, -1*CAMERA_DISTANCE, CAMERA_DISTANCE, -1*CAMERA_DISTANCE, CAMERA_DISTANCE, -100.0f, 100.0f);
+	} else {
+		mat4x4_perspective(projectionMatrix, 45.0f/180.0f * 3.14159f, 1.0f, 0.01f, 1000.0f);
+	}
 
 	buildObjects();
 
@@ -395,6 +402,7 @@ void display() {
  * The display routine is basically unchanged at this point.
  */
 void displayDirectional() {
+	myParticleSystem.generate(10);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
 	GLuint modelMatrixLocation = glGetUniformLocation(programID, "modelingMatrix");
@@ -412,6 +420,66 @@ void displayDirectional() {
 	glUniformMatrix4fv(viewMatrixLocation, 1, false, (const GLfloat*)viewMatrix);
 	GLuint projectionMatrixLocation = glGetUniformLocation(programID, "projectionMatrix");
 	glUniformMatrix4fv(projectionMatrixLocation, 1, false, (const GLfloat*)projectionMatrix);
+
+	mat4x4 MVMatrix, MVPMatrix;
+	mat4x4_mul(MVMatrix, viewMatrix, rotation);
+	mat4x4_mul(MVPMatrix, projectionMatrix, MVMatrix);
+	/*
+	 *  This code is designed to invert and transpose the matrix
+	 *  needed to modify normals.
+	 */
+	for (int i = 0; i < 3; i++) {  // zero out last row and column.
+		MVMatrix[i][3] = 0;
+		MVMatrix[3][i] = 0;
+	}
+	MVMatrix[3][3] = 1;
+	mat4x4 inverted;
+	mat4x4_invert(inverted, MVMatrix);  // inverting should give the proper
+										// matrix in the upper 3x3.
+	GLfloat normalMatrix[3][3];
+
+	for (int row = 0; row < 3; row++) {  // copy it over and transpose it.
+		for (int column = 0; column < 3; column++) {
+			normalMatrix[row][column] = inverted[column][row];
+		}
+	}
+	glUniformMatrix3fv(locationMap["normalMatrix"], 1, false, (const GLfloat*)normalMatrix);
+
+	SetUpDirectionalLighting();
+
+	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+	
+	mat4x4 scale;
+	mat4x4 translate;
+	mat4x4_identity(scale);
+	mat4x4_scale_aniso(scale, scale, 0.1f, 0.1f, 0.1f);;
+	mat4x4 modelMatrix;
+	float* positions = myParticleSystem.getPositions();
+	int nbrParticles = myParticleSystem.getNumberOfParticles();
+
+	for (int currentParticle = 0; currentParticle < nbrParticles; currentParticle++) {
+		mat4x4_identity(translate);
+		mat4x4_translate(translate, positions[currentParticle * 3],
+			positions[currentParticle * 3 + 1],
+			positions[currentParticle * 3 + 2]);
+		mat4x4_mul(modelMatrix, translate, scale);
+		glUniformMatrix4fv(modelMatrixLocation, 1, false, (const GLfloat *)modelMatrix);
+		glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
+	}
+	myParticleSystem.update();
+	myParticleSystem.compact();
+
+	currentT = currentT + 0.01f;
+	if (currentT > 2.0f * 3.14159f) {
+		currentT -= 2.0f * 3.14159f;
+	}
+}
+
+/*
+ * Set up the parameters for directional lighting.
+ */
+void SetUpDirectionalLighting()
+{
 	GLfloat ambientLight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	GLuint ambientLightLocation = glGetUniformLocation(programID, "ambientLight");
 	glUniform4fv(ambientLightLocation, 1, ambientLight);
@@ -430,13 +498,6 @@ void displayDirectional() {
 	glUniform3fv(directionalLightDirectionLoc, 1, directionalLightDirection);
 	glUniform3fv(directionalLightColorLoc, 1, directionalLightColor);
 	glUniform3fv(halfVectorLocation, 1, halfVector);
-
-	glDrawArrays(GL_TRIANGLES, 0, nbrTriangles * 3);
-
-	currentT = currentT + 0.01f;
-	if (currentT > 2.0f * 3.14159f) {
-		currentT -= 2.0f * 3.14159f;
-	}
 }
 
 /*
