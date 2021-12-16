@@ -29,6 +29,8 @@ using namespace std;
 
 #define CAMERA_DISTANCE 15.0f
 
+#define NUM_PARTS 7
+
 GLuint programID;
 /*
 * Arrays to store the indices/names of the Vertex Array Objects and
@@ -59,7 +61,7 @@ bool orthoViewEnabled = false;
 vmath::mat4 rotation, viewMatrix, projectionMatrix;
 map<string, GLuint> locationMap;
 
-HierarchicalObject *BaseObject, *lowerArmObject, *upperArmObject, *lampObject;
+// HierarchicalObject *BaseObject, *lowerArmObject, *upperArmObject, *lampObject;
 
 float currentT = 0.0f;
 
@@ -123,22 +125,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	 *                     M is used to toggle the base's motion on and off.
 	 */
 	else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-		lowerArmObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
+		// lowerArmObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-		lowerArmObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
+		// lowerArmObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
-		upperArmObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
+		// upperArmObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-		upperArmObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
+		// upperArmObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-		lampObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
+		// lampObject->rotate(10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_V && action == GLFW_PRESS) {
-		lampObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
+		// lampObject->rotate(-10.0f, 0.0f, 0.0f, 1.0f);
 	}
 	else if (key == GLFW_KEY_M && action == GLFW_PRESS) {
 		motionOn = !motionOn;
@@ -215,64 +217,64 @@ void setAttributes(float lineWidth, GLenum face, GLenum fill) {
 
 }
 
-/*
- * read and/or build the objects to be displayed.  Also sets up attributes that are
- * vertex related.
- */
-void buildObjects() {
+// /*
+//  * read and/or build the objects to be displayed.  Also sets up attributes that are
+//  * vertex related.
+//  */
+// void buildObjects() {
 
-	GLfloat* verticesBase;
-	GLfloat *normalsBase;
+// 	GLfloat* verticesBase;
+// 	GLfloat *normalsBase;
 
-	glGenVertexArrays(4, vertexBuffers);
-	glBindVertexArray(vertexBuffers[0]);
+// 	glGenVertexArrays(4, vertexBuffers);
+// 	glBindVertexArray(vertexBuffers[0]);
 
-/*
- * Read object in from obj file.
- */
+// /*
+//  * Read object in from obj file.
+//  */
 	
-	glGenBuffers(1, &(arrayBuffers[0]));
-	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
-	GLfloat baseColor[] = { 0.7f, 0.7f, 0.7f, 1.0f };
-	verticesBase = readOBJFile("../res/models/base.obj", nbrTriangles[0], normalsBase);
+// 	glGenBuffers(1, &(arrayBuffers[0]));
+// 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[0]);
+// 	GLfloat baseColor[] = { 0.7f, 0.7f, 0.7f, 1.0f };
+// 	verticesBase = readOBJFile("../res/models/base.obj", nbrTriangles[0], normalsBase);
 
-	BuildPart(nbrTriangles[0], nbrTriangles[0]*3 * 4, verticesBase, nbrTriangles[0]*3 * 3, normalsBase, baseColor);
+// 	BuildPart(nbrTriangles[0], nbrTriangles[0]*3 * 4, verticesBase, nbrTriangles[0]*3 * 3, normalsBase, baseColor);
 
-	GLfloat lowerArmColor[] = { 0.0f, 0.7f, 0.7f, 1.0f };
-	glBindVertexArray(vertexBuffers[1]);
-	glGenBuffers(1, &arrayBuffers[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[1]);
-	verticesBase = readOBJFile("../res/models/lowerArm.obj", nbrTriangles[1], normalsBase);
-	BuildPart(nbrTriangles[1], nbrTriangles[1]*3*4, verticesBase, 
-		      nbrTriangles[1] * 3 * 3, normalsBase, lowerArmColor);
+// 	GLfloat lowerArmColor[] = { 0.0f, 0.7f, 0.7f, 1.0f };
+// 	glBindVertexArray(vertexBuffers[1]);
+// 	glGenBuffers(1, &arrayBuffers[1]);
+// 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[1]);
+// 	verticesBase = readOBJFile("../res/models/lowerArm.obj", nbrTriangles[1], normalsBase);
+// 	BuildPart(nbrTriangles[1], nbrTriangles[1]*3*4, verticesBase, 
+// 		      nbrTriangles[1] * 3 * 3, normalsBase, lowerArmColor);
 
-	glBindVertexArray(vertexBuffers[2]);
-	glGenBuffers(1, &arrayBuffers[2]);
-	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[2]);
-	GLfloat upperArmColor[] = { 0.7f, 0.0f, 0.7f, 1.0f };
-	verticesBase = readOBJFile("../res/models/upperArm.obj", nbrTriangles[2], normalsBase);
-	BuildPart(nbrTriangles[2], nbrTriangles[2] * 3 * 4, verticesBase,
-		nbrTriangles[2] * 3 * 3, normalsBase, upperArmColor);
-	glBindVertexArray(vertexBuffers[3]);
-	glGenBuffers(1, &arrayBuffers[3]);
-	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[3]);
-	GLfloat lampColor[] = { 0.7f, 0.7f, 0.0f, 1.0f };
-	verticesBase = readOBJFile("../res/models/head.obj", nbrTriangles[3], normalsBase);
-	BuildPart(nbrTriangles[3], nbrTriangles[3] * 3 * 4, verticesBase,
-		nbrTriangles[3] * 3 * 3, normalsBase, lampColor);
+// 	glBindVertexArray(vertexBuffers[2]);
+// 	glGenBuffers(1, &arrayBuffers[2]);
+// 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[2]);
+// 	GLfloat upperArmColor[] = { 0.7f, 0.0f, 0.7f, 1.0f };
+// 	verticesBase = readOBJFile("../res/models/upperArm.obj", nbrTriangles[2], normalsBase);
+// 	BuildPart(nbrTriangles[2], nbrTriangles[2] * 3 * 4, verticesBase,
+// 		nbrTriangles[2] * 3 * 3, normalsBase, upperArmColor);
+// 	glBindVertexArray(vertexBuffers[3]);
+// 	glGenBuffers(1, &arrayBuffers[3]);
+// 	glBindBuffer(GL_ARRAY_BUFFER, arrayBuffers[3]);
+// 	GLfloat lampColor[] = { 0.7f, 0.7f, 0.0f, 1.0f };
+// 	verticesBase = readOBJFile("../res/models/head.obj", nbrTriangles[3], normalsBase);
+// 	BuildPart(nbrTriangles[3], nbrTriangles[3] * 3 * 4, verticesBase,
+// 		nbrTriangles[3] * 3 * 3, normalsBase, lampColor);
 	
-	BaseObject = new HierarchicalObject(programID, vertexBuffers[0], arrayBuffers[0],nbrTriangles[0]*3);
-	lowerArmObject = new HierarchicalObject(programID, vertexBuffers[1], arrayBuffers[1],nbrTriangles[1]*3);
-	upperArmObject = new HierarchicalObject(programID, vertexBuffers[2], arrayBuffers[2],nbrTriangles[2]*3);
-	lampObject = new HierarchicalObject(programID, vertexBuffers[3], arrayBuffers[3],nbrTriangles[3]*3);
+// 	BaseObject = new HierarchicalObject(programID, vertexBuffers[0], arrayBuffers[0],nbrTriangles[0]*3);
+// 	lowerArmObject = new HierarchicalObject(programID, vertexBuffers[1], arrayBuffers[1],nbrTriangles[1]*3);
+// 	upperArmObject = new HierarchicalObject(programID, vertexBuffers[2], arrayBuffers[2],nbrTriangles[2]*3);
+// 	lampObject = new HierarchicalObject(programID, vertexBuffers[3], arrayBuffers[3],nbrTriangles[3]*3);
 
-	BaseObject->add(lowerArmObject);
-	lowerArmObject->add(upperArmObject);
-	upperArmObject->add(lampObject);
-	upperArmObject->translate(0.0f, 4.0f, 0.0f);
-	lowerArmObject->translate(0.0f, 1.0f, 0.0f);
-	lampObject->translate(0.0f, 3.0f, 0.0f);
-}
+// 	BaseObject->add(lowerArmObject);
+// 	lowerArmObject->add(upperArmObject);
+// 	upperArmObject->add(lampObject);
+// 	upperArmObject->translate(0.0f, 4.0f, 0.0f);
+// 	lowerArmObject->translate(0.0f, 1.0f, 0.0f);
+// 	lampObject->translate(0.0f, 3.0f, 0.0f);
+// }
 
 /*
  * Global pointers for the objects and the routine to read them in and to 
@@ -282,7 +284,8 @@ void buildObjects() {
  */
 HierarchicalObject* pelvis, * upperLeftLeg, * upperRightLeg, * lowerLeftLeg, * lowerRightLeg, * leftFoot, * rightFoot, * upperBody;
 void buildSkeleton() {
-	char* inputFiles[] = { 
+	int nbrOfParts = NUM_PARTS;
+	const char* inputFiles[NUM_PARTS] = { 
 		"../res/models/pelvis.obj", 
 		"../res/models/limb20.obj", 
 		"../res/models/limb20.obj", 
@@ -294,7 +297,6 @@ void buildSkeleton() {
 
 	GLfloat* verticesBase;
 	GLfloat* normalsBase;
-	int nbrOfParts = sizeof(inputFiles) / sizeof(string);
 	/*
 	*/
 	glGenVertexArrays(nbrOfParts, vertexBuffers);
@@ -302,7 +304,6 @@ void buildSkeleton() {
 	for (int currentPart = 0; currentPart < nbrOfParts; currentPart++) {
 
 		glBindVertexArray(vertexBuffers[currentPart]);
-
 
 		/*
 		 * Read object in from obj file.
@@ -490,11 +491,9 @@ void init(string vertexShader, string fragmentShader) {
 	 *  This initializes either the skeleton or objects depending on what
 	 *  is commented out.  The Objects is the lamp we demonstrated in class.
 	 */
-	buildObjects();
-	// buildSkeleton();
+	// buildObjects();
+	buildSkeleton();
 	getLocations();
-
-
 }
 
 /*
@@ -538,15 +537,16 @@ void displayDirectional() {
 	glUniform3fv(halfVectorLocation, 1, halfVector);
 
 	if (motionOn) {
-		BaseObject->clearCurrentTransform();
-		BaseObject->translate(3.0f * sin(t * 2 * 3.14159),
-			0.0f,
-			2.0 * cos(t * 2 * 3.14159));
-        //updateJointPositions();
+		// BaseObject->clearCurrentTransform();
+		// BaseObject->translate(3.0f * sin(t * 2 * 3.14159),
+			// 0.0f,
+			// 2.0 * cos(t * 2 * 3.14159));
+
+        // updateJointPositions();
 	}
 
-    //pelvis->display(projectionMatrix, viewMatrix, rotation);
-	BaseObject->display(projectionMatrix, viewMatrix, rotation);
+    pelvis->display(projectionMatrix, viewMatrix, rotation);
+	// BaseObject->display(projectionMatrix, viewMatrix, rotation);
 
 	t = t + 0.01;
 	if (t >= 1.0f) {
