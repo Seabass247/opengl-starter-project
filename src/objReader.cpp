@@ -4,9 +4,6 @@
 #include <cstdlib>
 #include <string>
 #include <strstream>
-
-#include "objReader.h"
-
 using namespace std;
 
 /*
