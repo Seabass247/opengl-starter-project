@@ -74,7 +74,7 @@ void setAttributes(float lineWidth = 1.0, GLenum face = GL_FRONT_AND_BACK,
 void buildObjects();
 void connectSkeleton();
 void BuildPart(int nbrTriangles, int nbrVertices, GLfloat  vertices[], int nbrNormals, GLfloat  normals[], GLfloat color[]);
-void updateJointPositions();
+void updateJointPositions(double t);
 void getLocations();
 void init(string vertexShader, string fragmentShader);
 
@@ -499,7 +499,11 @@ void init(string vertexShader, string fragmentShader) {
 /*
  * The display routine is basically unchanged at this point.
  */
+double lastTime = glfwGetTime();
 void displayDirectional() {
+	double deltaT = glfwGetTime() - lastTime;
+	lastTime = glfwGetTime();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// needed
 	glUseProgram(programID);
 	glBindVertexArray(vertexBuffers[0]);
@@ -537,23 +541,51 @@ void displayDirectional() {
 	glUniform3fv(halfVectorLocation, 1, halfVector);
 
 	if (motionOn) {
-		// BaseObject->clearCurrentTransform();
-		// BaseObject->translate(3.0f * sin(t * 2 * 3.14159),
-			// 0.0f,
-			// 2.0 * cos(t * 2 * 3.14159));
+		pelvis->clearCurrentTransform();
+		pelvis->translate(8.0f * sin(t * 2 * 3.14159),
+			0.0f,
+			8.0 * cos(t * 2 * 3.14159));
 
-        // updateJointPositions();
+        updateJointPositions(t);
 	}
 
     pelvis->display(projectionMatrix, viewMatrix, rotation);
-	// BaseObject->display(projectionMatrix, viewMatrix, rotation);
 
-	t = t + 0.01;
+	t = t + deltaT * 0.5;
 	if (t >= 1.0f) {
 		t = t - 1.0f;
 	}
 }
 
+void updateJointPositions(double t) {
+	// right upper leg
+	float RULtransX;
+	float RULtransY;
+	float RULtransZ;
+	float RULrotX;
+	float RULrotY;
+	float RULrotZ;
+	rightUpperLegMotion(t, RULtransX, RULtransY, RULtransZ, RULrotX, RULrotY, RULrotZ);
+	upperRightLeg->clearCurrentTransform();
+	upperRightLeg->translate(RULtransX, RULtransY, RULtransZ);
+	upperRightLeg->rotate(RULrotX, 1.0f, 0.0f, 0.0f);
+	upperRightLeg->rotate(RULrotY, 0.0f, 1.0f, 0.0f);
+	upperRightLeg->rotate(RULrotZ, 0.0f, 0.0f, 1.0f);
+
+	float LULtransX;
+	float LULtransY;
+	float LULtransZ;
+	float LULrotX;
+	float LULrotY;
+	float LULrotZ;
+	leftUpperLegMotion(t, LULtransX, LULtransY, LULtransZ, LULrotX, LULrotY, LULrotZ);
+	upperLeftLeg->clearCurrentTransform();
+	upperLeftLeg->translate(LULtransX, LULtransY, LULtransZ);
+	upperLeftLeg->rotate(LULrotX, 1.0f, 0.0f, 0.0f);
+	upperLeftLeg->rotate(LULrotY, 0.0f, 1.0f, 0.0f);
+	upperLeftLeg->rotate(LULrotZ, 0.0f, 0.0f, 1.0f);
+
+}
 /*
 * Handle window resizes -- adjust size of the viewport -- more on this later
 */
