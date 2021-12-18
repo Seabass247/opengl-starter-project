@@ -652,8 +652,21 @@ void displayDirectional() {
 
 }
 
-void updateJoint(void (*func)(float, float&, float&, float&, float&, float&, float&)) {
+void updateJoint(float t, HierarchicalObject *obj,
+	void (*func)(float, float&, float&, float&, float&, float&, float&), float offX, float offY, float offZ) {
+	float JtransX;
+	float JtransY;
+	float JtransZ;
+	float JrotX;
+	float JrotY;
+	float JrotZ;
+	func(t, JtransX, JtransY, JtransZ, JrotX, JrotY, JrotZ);
 
+	obj->clearCurrentTransform();
+	obj->translate(JtransX + offX, JtransY + offY, JtransZ + offZ);
+	obj->rotate(JrotX, 1.0f, 0.0f, 0.0f);
+	obj->rotate(JrotY, 0.0f, 1.0f, 0.0f);
+	obj->rotate(JrotZ, 0.0f, 0.0f, 1.0f);
 }
 
 void updateJointPositions(double t) {
@@ -673,34 +686,17 @@ void updateJointPositions(double t) {
 	pelvis->rotate(HrotY, 0.0f, 1.0f, 0.0f);
 	pelvis->rotate(HrotZ, 0.0f, 0.0f, 1.0f);
 
-	// right upper leg
-	float RULtransX;
-	float RULtransY;
-	float RULtransZ;
-	float RULrotX;
-	float RULrotY;
-	float RULrotZ;
-	rightUpperLegMotion(t, RULtransX, RULtransY, RULtransZ, RULrotX, RULrotY, RULrotZ);
-	upperRightLeg->clearCurrentTransform();
-	upperRightLeg->translate(1.0f, 0.0f, 0.0f);
-	upperRightLeg->translate(RULtransX, RULtransY, RULtransZ);
-	upperRightLeg->rotate(RULrotX, 1.0f, 0.0f, 0.0f);
-	upperRightLeg->rotate(RULrotY, 0.0f, 1.0f, 0.0f);
-	upperRightLeg->rotate(RULrotZ, 0.0f, 0.0f, 1.0f);
+	updateJoint(t, upperRightLeg, &rightUpperLegMotion, 1.0f, 0.0f, 0.0f);
 
-	float LULtransX;
-	float LULtransY;
-	float LULtransZ;
-	float LULrotX;
-	float LULrotY;
-	float LULrotZ;
-	leftUpperLegMotion(t, LULtransX, LULtransY, LULtransZ, LULrotX, LULrotY, LULrotZ);
-	upperLeftLeg->clearCurrentTransform();
-	upperLeftLeg->translate(-1.0f, 0.0f, 0.0f);
-	upperLeftLeg->translate(LULtransX, LULtransY, LULtransZ);
-	upperLeftLeg->rotate(LULrotX, 1.0f, 0.0f, 0.0f);
-	upperLeftLeg->rotate(LULrotY, 0.0f, 1.0f, 0.0f);
-	upperLeftLeg->rotate(LULrotZ, 0.0f, 0.0f, 1.0f);
+	updateJoint(t, upperLeftLeg, &leftUpperLegMotion, -1.0f, 0.0f, 0.0f);
+
+	updateJoint(t, lowerRightLeg, &rightKneeMotion, 0.0f, -2.0f, 0.0f);
+
+	updateJoint(t, lowerLeftLeg, &leftKneeMotion, 0.0f, -2.0f, 0.0f);
+
+	updateJoint(t, rightFoot, &rightAnkleMotion, 0.0f, -2.0f, 0.0f);
+
+	updateJoint(t, leftFoot, &leftAnkleMotion, 0.0f, -2.0f, 0.0f);
 
 }
 /*
