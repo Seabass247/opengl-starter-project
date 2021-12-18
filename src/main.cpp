@@ -29,7 +29,7 @@ using namespace std;
 
 #define CAMERA_DISTANCE 15.0f
 
-#define NUM_PARTS 7
+#define NUM_PARTS 10
 
 GLuint programID;
 /*
@@ -282,7 +282,8 @@ void setAttributes(float lineWidth, GLenum face, GLenum fill) {
  * 
  * Needs the upper body yet.  
  */
-HierarchicalObject* pelvis, * upperLeftLeg, * upperRightLeg, * lowerLeftLeg, * lowerRightLeg, * leftFoot, * rightFoot, * upperBody;
+HierarchicalObject* pelvis, * upperLeftLeg, * upperRightLeg, * lowerLeftLeg, * lowerRightLeg, 
+* leftFoot, * rightFoot, * chest, * head, * lowerUpperBody;
 void buildSkeleton() {
 	int nbrOfParts = NUM_PARTS;
 	const char* inputFiles[NUM_PARTS] = { 
@@ -292,7 +293,10 @@ void buildSkeleton() {
 		"../res/models/limb20.obj", 
 		"../res/models/limb20.obj", 
 		"../res/models/foot.obj", 
-		"../res/models/foot.obj" 
+		"../res/models/foot.obj",
+		"../res/models/base.obj",
+		"../res/models/limb.obj",
+		"../res/models/head.obj"
 	};
 
 	GLfloat* verticesBase;
@@ -322,6 +326,9 @@ void buildSkeleton() {
 	lowerRightLeg = new HierarchicalObject(programID, vertexBuffers[4], arrayBuffers[4], nbrTriangles[4]*3);
 	leftFoot = new HierarchicalObject(programID, vertexBuffers[5], arrayBuffers[5], nbrTriangles[5] * 3);
 	rightFoot = new HierarchicalObject(programID, vertexBuffers[6], arrayBuffers[6], nbrTriangles[6] * 3);
+	lowerUpperBody = new HierarchicalObject(programID, vertexBuffers[7], arrayBuffers[7], nbrTriangles[7] * 3);
+	chest = new HierarchicalObject(programID, vertexBuffers[8], arrayBuffers[8], nbrTriangles[8] * 3);
+	head = new HierarchicalObject(programID, vertexBuffers[9], arrayBuffers[9], nbrTriangles[9] * 3);
 
 	connectSkeleton();
 }
@@ -334,11 +341,16 @@ void connectSkeleton()
 {
 	pelvis->add(upperLeftLeg);
 	pelvis->add(upperRightLeg);
+	pelvis->add(head);
+
 	upperLeftLeg->add(lowerLeftLeg);
 	upperRightLeg->add(lowerRightLeg);
 	lowerLeftLeg->add(leftFoot);
 	lowerRightLeg->add(rightFoot);
 
+	// lowerUpperBody->translate(0.0f, 1.0f, 0.0f);
+	// chest->translate(0.0f, 1.0f, 0.0f);
+	// head->translate(0.0f, 2.0f, 0.0f);
 	upperRightLeg->translate(1.0f, 0.0f, 0.0f);
 	upperLeftLeg->translate(-1.0f, 0.0f, 0.0f);
 	lowerRightLeg->translate(0.0f, -2.0f, 0.0f);
@@ -541,10 +553,10 @@ void displayDirectional() {
 	glUniform3fv(halfVectorLocation, 1, halfVector);
 
 	if (motionOn) {
-		pelvis->clearCurrentTransform();
-		pelvis->translate(8.0f * sin(t * 2 * 3.14159),
-			0.0f,
-			8.0 * cos(t * 2 * 3.14159));
+		// pelvis->clearCurrentTransform();
+		// pelvis->translate(8.0f * sin(t * 2 * 3.14159),
+		// 	0.0f,
+		// 	8.0 * cos(t * 2 * 3.14159));
 
         updateJointPositions(t);
 	}
@@ -558,6 +570,20 @@ void displayDirectional() {
 }
 
 void updateJointPositions(double t) {
+	// hip motion
+	float HtransX;
+	float HtransY;
+	float HtransZ;
+	float HrotX;
+	float HrotY;
+	float HrotZ;
+	hipMotion(t, HtransX, HtransY, HtransZ, HrotX, HrotY, HrotZ);
+	pelvis->clearCurrentTransform();
+	pelvis->translate(HtransX, HtransY, HtransZ);
+	pelvis->rotate(HrotX, 1.0f, 0.0f, 0.0f);
+	pelvis->rotate(HrotY, 0.0f, 1.0f, 0.0f);
+	pelvis->rotate(HrotZ, 0.0f, 0.0f, 1.0f);
+
 	// right upper leg
 	float RULtransX;
 	float RULtransY;
@@ -567,6 +593,7 @@ void updateJointPositions(double t) {
 	float RULrotZ;
 	rightUpperLegMotion(t, RULtransX, RULtransY, RULtransZ, RULrotX, RULrotY, RULrotZ);
 	upperRightLeg->clearCurrentTransform();
+	upperRightLeg->translate(1.0f, 0.0f, 0.0f);
 	upperRightLeg->translate(RULtransX, RULtransY, RULtransZ);
 	upperRightLeg->rotate(RULrotX, 1.0f, 0.0f, 0.0f);
 	upperRightLeg->rotate(RULrotY, 0.0f, 1.0f, 0.0f);
@@ -580,6 +607,7 @@ void updateJointPositions(double t) {
 	float LULrotZ;
 	leftUpperLegMotion(t, LULtransX, LULtransY, LULtransZ, LULrotX, LULrotY, LULrotZ);
 	upperLeftLeg->clearCurrentTransform();
+	upperLeftLeg->translate(-1.0f, 0.0f, 0.0f);
 	upperLeftLeg->translate(LULtransX, LULtransY, LULtransZ);
 	upperLeftLeg->rotate(LULrotX, 1.0f, 0.0f, 0.0f);
 	upperLeftLeg->rotate(LULrotY, 0.0f, 1.0f, 0.0f);
