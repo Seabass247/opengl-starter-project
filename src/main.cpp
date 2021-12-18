@@ -29,7 +29,7 @@ using namespace std;
 
 #define CAMERA_DISTANCE 15.0f
 
-#define NUM_PARTS 10
+#define NUM_PARTS 13
 
 GLuint programID;
 /*
@@ -53,7 +53,7 @@ bool elements;
 int nbrTriangles[20], materialToUse = 0;
 
 int startTriangle = 0, endTriangle = 12;
-bool motionOn = false;
+bool motionOn = true;
 float t; // parameter for motion...
 
 bool rotationOn = true;
@@ -283,10 +283,10 @@ void setAttributes(float lineWidth, GLenum face, GLenum fill) {
  * Needs the upper body yet.  
  */
 HierarchicalObject* pelvis, * upperLeftLeg, * upperRightLeg, * lowerLeftLeg, * lowerRightLeg, 
-* leftFoot, * rightFoot, * chest, * head, * lowerUpperBody;
+* leftFoot, * rightFoot, * upperBody, * head, * leftArmLower, * rightArmLower, * leftArmUpper, * rightArmUpper;
 void buildSkeleton() {
 	int nbrOfParts = NUM_PARTS;
-	const char* inputFiles[NUM_PARTS] = { 
+	const char* inputFiles[] = { 
 		"../res/models/pelvis.obj", 
 		"../res/models/limb20.obj", 
 		"../res/models/limb20.obj", 
@@ -294,9 +294,12 @@ void buildSkeleton() {
 		"../res/models/limb20.obj", 
 		"../res/models/foot.obj", 
 		"../res/models/foot.obj",
-		"../res/models/base.obj",
-		"../res/models/limb.obj",
-		"../res/models/head.obj"
+		"../res/models/upperBody.obj",
+		"../res/models/head.obj",
+		"../res/models/lowerArm.obj",
+		"../res/models/lowerArm.obj",
+		"../res/models/upperArm.obj",
+		"../res/models/upperArm.obj",
 	};
 
 	GLfloat* verticesBase;
@@ -326,31 +329,47 @@ void buildSkeleton() {
 	lowerRightLeg = new HierarchicalObject(programID, vertexBuffers[4], arrayBuffers[4], nbrTriangles[4]*3);
 	leftFoot = new HierarchicalObject(programID, vertexBuffers[5], arrayBuffers[5], nbrTriangles[5] * 3);
 	rightFoot = new HierarchicalObject(programID, vertexBuffers[6], arrayBuffers[6], nbrTriangles[6] * 3);
-	lowerUpperBody = new HierarchicalObject(programID, vertexBuffers[7], arrayBuffers[7], nbrTriangles[7] * 3);
-	chest = new HierarchicalObject(programID, vertexBuffers[8], arrayBuffers[8], nbrTriangles[8] * 3);
-	head = new HierarchicalObject(programID, vertexBuffers[9], arrayBuffers[9], nbrTriangles[9] * 3);
+	upperBody = new HierarchicalObject(programID, vertexBuffers[7], arrayBuffers[7], nbrTriangles[7] * 3);
+	head = new HierarchicalObject(programID, vertexBuffers[8], arrayBuffers[8], nbrTriangles[8] * 3);
+	leftArmLower = new HierarchicalObject(programID, vertexBuffers[9], arrayBuffers[9], nbrTriangles[9]*3);
+    rightArmLower = new HierarchicalObject(programID, vertexBuffers[10], arrayBuffers[10], nbrTriangles[10]*3);
+	leftArmUpper = new HierarchicalObject(programID, vertexBuffers[11], arrayBuffers[11], nbrTriangles[11]*3);
+    rightArmUpper = new HierarchicalObject(programID, vertexBuffers[12], arrayBuffers[12], nbrTriangles[12]*3);
 
 	connectSkeleton();
 }
-
-/*
- *  Connect the skeleton together.  The upper body will need to
- * be added into here once I upload it.
- */
 void connectSkeleton()
 {
 	pelvis->add(upperLeftLeg);
 	pelvis->add(upperRightLeg);
-	pelvis->add(head);
+	pelvis->add(upperBody);
+
+	upperBody->add(head);
+	upperBody->add(leftArmUpper);
+	upperBody->add(rightArmUpper);
+
+	leftArmUpper->add(leftArmLower);
+	rightArmUpper->add(rightArmLower);
 
 	upperLeftLeg->add(lowerLeftLeg);
 	upperRightLeg->add(lowerRightLeg);
 	lowerLeftLeg->add(leftFoot);
 	lowerRightLeg->add(rightFoot);
 
-	// lowerUpperBody->translate(0.0f, 1.0f, 0.0f);
-	// chest->translate(0.0f, 1.0f, 0.0f);
-	// head->translate(0.0f, 2.0f, 0.0f);
+	rightArmUpper->translate(1.0f, 1.5f, 0.0f);
+	leftArmUpper->translate(-1.0f, 1.5f, 0.0f);
+	rightArmUpper->scale(1.0f, 0.5f, 1.0f);
+	leftArmUpper->scale(1.0f, 0.5f, 1.0f);
+	
+	rightArmLower->translate(0.0f, 0.0f, 0.0f);
+	leftArmLower->translate(0.0f, 0.0f, 0.0f);
+
+	rightArmLower->scale(1.0f, 0.75f, 1.0f);
+	leftArmLower->scale(1.0f, 0.75f, 1.0f);
+
+	rightArmLower->rotate(-165.0f, 1.0f, 0.0f, 0.0f);
+	leftArmLower->rotate(-165.0f, 1.0f, 0.0f, 0.0f);
+
 	upperRightLeg->translate(1.0f, 0.0f, 0.0f);
 	upperLeftLeg->translate(-1.0f, 0.0f, 0.0f);
 	lowerRightLeg->translate(0.0f, -2.0f, 0.0f);
@@ -363,7 +382,7 @@ void connectSkeleton()
  * says hip but it is the pelvis.  
  */
 void hipMotion(float t, float &translationX, float &translationY, float &translationZ, float &rotationX, float &rotationY, float &rotationZ) {
-	static float tilt[] = { 12.5, 12.0, 11.0, 13.0, 14.0, 13.0, 11.0, 11.0, 12.5, 14.0, 12.5 };
+	static float tilt[] = { -12.5, -12.0, -11.0, -13.0, -14.0, -13.0, -11.0, -11.0, -12.5, -14.0, -12.5 };
 	static float rotation[] =  { 7.0, 5.0, 3.5, 3.5, -1.0, -7.0, -5.0, -4.0, -4.0, 1.0, 7.0 };
 	static float obliquity[] = { 1.0, 5.0, 6.0, 1.0, 0.0, -2.0, -5.0, -6.0, -2.0, 0.0, 1.0 };
 	int index = t * 10.0f;
@@ -413,6 +432,66 @@ void rightUpperLegMotion(float t, float& translationX, float& translationY, floa
 	rotationZ = interpolate(index, value, adduction);
 	translationX = translationY = translationZ = 0.0f;
 	return;
+}
+
+void rightKneeMotion(float t, float& translationX, float& translationY, float& translationZ, float& rotationX, float& rotationY, float& rotationZ) {
+	static float flexion[] = { 0.0f, -20.0f, -20.0f, -10.0f, 0.0f, -10.0f, -35.0f, -60.0f, -55.0f, -20.0f,0.0f };
+	static float adduction[] = { 2.0f, 5.0f, 2.5f, 2.0f, 2.0f, 0.0f, -2.0f, -5.0f, 0.0f, 2.5f, 2.0f };
+	static float intext[] = { -23.0f, -20.0f, -17.0f, -12.50f, -10.0f, -7.0f, -16.0f, -16.0f, -20.0f, -24.0,-23.0f };
+	t = t + 0.5f;
+	if (t >= 1.0f) {
+		t = t - 1.0f;
+	}
+	int index = t * 10.0f;
+	float value = t * 10.0f - index;
+	auto interpolate = [](int index, float value, auto table) { return table[index] + value * (table[index + 1] - table[index]); };
+	rotationX = interpolate(index, value, flexion);
+	rotationY = interpolate(index, value, intext);
+	rotationZ = interpolate(index, value, adduction);
+	translationX = translationY = translationZ = 0.0f;
+}
+
+void leftKneeMotion(float t, float& translationX, float& translationY, float& translationZ, float& rotationX, float& rotationY, float& rotationZ) {
+	static float flexion[] = { 0.0f, -20.0f, -20.0f, -10.0f, 0.0f, -10.0f, -35.0f, -60.0f, -55.0f, -20.0f,0.0f };
+	static float adduction[] = { 2.0f, 5.0f, 2.5f, 2.0f, 2.0f, 0.0f, -2.0f, -5.0f, 0.0f, 2.5f, 2.0f };
+	static float intext[] = { -23.0f, -20.0f, -17.0f, -12.50f, -10.0f, -7.0f, -16.0f, -16.0f, -20.0f, -24.0,-23.0f };
+
+	int index = t * 10.0f;
+	float value = t * 10.0f - index;
+	auto interpolate = [](int index, float value, auto table) { return table[index] + value * (table[index + 1] - table[index]); };
+	rotationX = interpolate(index, value, flexion);
+	rotationY = interpolate(index, value, intext);
+	rotationZ = interpolate(index, value, adduction);
+	translationX = translationY = translationZ = 0.0f;
+}
+void rightAnkleMotion(float t, float& translationX, float& translationY, float& translationZ, float& rotationX, float& rotationY, float& rotationZ) {
+	static float flexion[] = { 3.0f, 0.0f, 7.0f, 8.5f, 10.0f, 5.0f, -12.0f, -4.0f, 5.0f, 4.0f, 3.0f };
+	static float adduction[] = { 7.0f, 2.0f, 0.0f, 2.0f, 4.0f, 8.0f, 12.0f, 5.0f, 4.0f, 3.0f, 7.0f };
+	static float intext[] = { 10.0f, 4.0f, 6.0f,6.5f, 7.0f, 10.0f, 20.0f, 10.0f, 12.0f, 9.0f, 10.0f };
+	t = t + 0.5f;
+	if (t >= 1.0f) {
+		t = t - 1.0f;
+	}
+	int index = t * 10.0f;
+	float value = t * 10.0f - index;
+	auto interpolate = [](int index, float value, auto table) { return table[index] + value * (table[index + 1] - table[index]); };
+	rotationX = interpolate(index, value, flexion);
+	rotationY = interpolate(index, value, intext);
+	rotationZ = interpolate(index, value, adduction);
+	translationX = translationY = translationZ = 0.0f;
+}
+void leftAnkleMotion(float t, float& translationX, float& translationY, float& translationZ, float& rotationX, float& rotationY, float& rotationZ) {
+	static float flexion[] = { 3.0f, 0.0f, 7.0f, 8.5f, 10.0f, 5.0f, -12.0f, -4.0f, 5.0f, 4.0f, 3.0f };
+	static float adduction[] = { 7.0f, 2.0f, 0.0f, 2.0f, 4.0f, 8.0f, 12.0f, 5.0f, 4.0f, 3.0f, 7.0f };
+	static float intext[] = { 10.0f, 4.0f, 6.0f,6.5f, 7.0f, 10.0f, 20.0f, 10.0f, 12.0f, 9.0f, 10.0f };
+
+	int index = t * 10.0f;
+	float value = t * 10.0f - index;
+	auto interpolate = [](int index, float value, auto table) { return table[index] + value * (table[index + 1] - table[index]); };
+	rotationX = interpolate(index, value, flexion);
+	rotationY = interpolate(index, value, intext);
+	rotationZ = interpolate(index, value, adduction);
+	translationX = translationY = translationZ = 0.0f;
 }
 
 /*
@@ -496,7 +575,9 @@ void init(string vertexShader, string fragmentShader) {
 
 	programID = buildProgram(vertexShader, fragmentShader);
 	rotation = vmath::scale(1.0f);
-	viewMatrix = vmath::lookat(vmath::vec3(0.0f, 0.0f, 10.0f), vmath::vec3(0.0f, 0.0f, 0.0f), vmath::vec3(0.0f, 1.0f, 0.0f));
+	viewMatrix = vmath::lookat(vmath::vec3(1.0f, 0.0f, 0.0f), 
+								vmath::vec3(0.0f, 0.0f, 0.0f), 
+								vmath::vec3(0.0f, 1.0f, 0.0f));
 	projectionMatrix = vmath::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -100.0f, 100.0f);
 
 	/*
@@ -559,17 +640,25 @@ void displayDirectional() {
 		// 	8.0 * cos(t * 2 * 3.14159));
 
         updateJointPositions(t);
+
+		t = t + deltaT * 0.5;
+		if (t >= 1.0f) {
+			t = t - 1.0f;
+		}
 	}
 
     pelvis->display(projectionMatrix, viewMatrix, rotation);
 
-	t = t + deltaT * 0.5;
-	if (t >= 1.0f) {
-		t = t - 1.0f;
-	}
+
+}
+
+void updateJoint(void (*func)(float, float&, float&, float&, float&, float&, float&)) {
+
 }
 
 void updateJointPositions(double t) {
+	float walk_offset = 8.0 + -16.0*t;
+
 	// hip motion
 	float HtransX;
 	float HtransY;
@@ -579,7 +668,7 @@ void updateJointPositions(double t) {
 	float HrotZ;
 	hipMotion(t, HtransX, HtransY, HtransZ, HrotX, HrotY, HrotZ);
 	pelvis->clearCurrentTransform();
-	pelvis->translate(HtransX, HtransY, HtransZ);
+	pelvis->translate(HtransX, HtransY, HtransZ + walk_offset);
 	pelvis->rotate(HrotX, 1.0f, 0.0f, 0.0f);
 	pelvis->rotate(HrotY, 0.0f, 1.0f, 0.0f);
 	pelvis->rotate(HrotZ, 0.0f, 0.0f, 1.0f);
