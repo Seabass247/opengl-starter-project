@@ -686,6 +686,7 @@ void updateJointPositions(double t) {
 	pelvis->rotate(HrotY, 0.0f, 1.0f, 0.0f);
 	pelvis->rotate(HrotZ, 0.0f, 0.0f, 1.0f);
 
+	// motions for rest of joints
 	updateJoint(t, upperRightLeg, &rightUpperLegMotion, 1.0f, 0.0f, 0.0f);
 
 	updateJoint(t, upperLeftLeg, &leftUpperLegMotion, -1.0f, 0.0f, 0.0f);
